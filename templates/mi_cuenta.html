@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Cuenta - Sistema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% if current_user.role == 'super_admin' %}{{ url_for('super_admin') }}{% else %}{{ url_for('admin_parroquia') }}{% endif %}">
+                <i class="fas fa-user-cog"></i> Mi Cuenta
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{% if current_user.role == 'super_admin' %}{{ url_for('super_admin') }}{% else %}{{ url_for('admin_parroquia') }}{% endif %}">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2><i class="fas fa-user"></i> Mi Cuenta</h2>
+                <p class="text-muted">Gestiona tu información personal y configuración de cuenta</p>
+            </div>
+        </div>
+
+        <!-- Información Personal -->
+        <div class="row mt-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-edit"></i> Información Personal</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nombre</label>
+                                        <input type="text" class="form-control" name="nombre" value="{{ user_data.nombre }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Apellido</label>
+                                        <input type="text" class="form-control" name="apellido" value="{{ user_data.apellido }}" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email" value="{{ user_data.email }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Usuario</label>
+                                <input type="text" class="form-control" value="{{ user_data.username }}" disabled>
+                                <small class="form-text text-muted">El nombre de usuario no se puede cambiar</small>
+                            </div>
+                            <hr>
+                            <h6 class="text-muted">Cambiar Contraseña</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Contraseña Actual</label>
+                                <input type="password" class="form-control" name="current_password" placeholder="Ingrese su contraseña actual">
+                                <small class="form-text text-muted">Requerida para cambiar la contraseña</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nueva Contraseña</label>
+                                <input type="password" class="form-control" name="new_password" placeholder="Mínimo 6 caracteres">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Confirmar Nueva Contraseña</label>
+                                <input type="password" class="form-control" name="confirm_password" placeholder="Repita la nueva contraseña">
+                                <small class="form-text text-muted">Deje todos los campos de contraseña vacíos si no desea cambiarla</small>
+                            </div>
+                            <button type="submit" name="update_profile" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Actualizar Información
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <!-- Información de Cuenta -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> Información de Cuenta</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Rol:</strong> 
+                            {% if user_data.role == 'super_admin' %}
+                                <span class="badge bg-danger">Super Administrador</span>
+                            {% elif user_data.role == 'admin_parroquia' %}
+                                <span class="badge bg-primary">Admin Parroquia</span>
+                            {% elif user_data.role == 'tecnico' %}
+                                <span class="badge bg-success">Técnico</span>
+                            {% endif %}
+                        </p>
+                        {% if parroquia_info %}
+                        <p><strong>Parroquia:</strong><br>
+                            <span class="badge bg-info">{{ parroquia_info.nombre }}</span><br>
+                            <small class="text-muted">{{ parroquia_info.canton }}</small>
+                        </p>
+                        {% endif %}
+                        <p><strong>Miembro desde:</strong><br>
+                            <small>{{ user_data.created_at.strftime('%d/%m/%Y') if user_data.created_at else 'N/A' }}</small>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Estadísticas Personales -->
+                {% if stats_personales %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-pie"></i> Mis Estadísticas</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if current_user.role == 'super_admin' %}
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Parroquias:</span>
+                                <span class="badge bg-primary">{{ stats_personales.total_parroquias }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Usuarios:</span>
+                                <span class="badge bg-success">{{ stats_personales.total_usuarios }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Bienes:</span>
+                                <span class="badge bg-info">{{ stats_personales.total_bienes }}</span>
+                            </div>
+                        {% elif current_user.role == 'admin_parroquia' %}
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Bienes Gestionados:</span>
+                                <span class="badge bg-primary">{{ stats_personales.bienes_gestionados }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Asignaciones:</span>
+                                <span class="badge bg-warning">{{ stats_personales.asignaciones_realizadas }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Técnicos Creados:</span>
+                                <span class="badge bg-success">{{ stats_personales.tecnicos_creados }}</span>
+                            </div>
+                        {% elif current_user.role == 'tecnico' %}
+                            <div class="d-flex justify-content-between">
+                                <span>Bienes Asignados:</span>
+                                <span class="badge bg-info">{{ stats_personales.bienes_asignados }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Actividad Reciente -->
+        {% if actividad_reciente %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-history"></i> Mi Actividad Reciente</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Acción</th>
+                                        <th>Detalles</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for actividad in actividad_reciente %}
+                                    <tr>
+                                        <td><small>{{ actividad.timestamp.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                                        <td>
+                                            {% if actividad.action == 'LOGIN' %}
+                                                <span class="badge bg-secondary">Login</span>
+                                            {% elif actividad.action == 'CREATE_ASSET' %}
+                                                <span class="badge bg-success">Crear Bien</span>
+                                            {% elif actividad.action == 'ASSIGN_ASSET' %}
+                                                <span class="badge bg-warning">Asignar</span>
+                                            {% elif actividad.action == 'UPDATE_PROFILE' %}
+                                                <span class="badge bg-info">Actualizar Perfil</span>
+                                            {% else %}
+                                                <span class="badge bg-dark">{{ actividad.action }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><small>{{ actividad.details }}</small></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-user-cog"></i> Mi Cuenta</h5>
+                    <p class="mb-0">Gestión de perfil personal</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1"><strong>CONAGOPARE</strong></p>
+                    <small class="text-muted">Usuario: {{ current_user.username }} | {{ datetime.now().year }}</small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div class="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Show Flask flash messages
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    showToast('{{ message }}', '{{ category }}');
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </script>
+</body>
+</html>

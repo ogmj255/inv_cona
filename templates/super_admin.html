@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Administrador - Sistema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .stats-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        .management-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .management-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+        }
+        .icon-wrapper {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, var(--icon-color-1), var(--icon-color-2));
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .btn-modern {
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand, .nav-link {
+            color: #333 !important;
+        }
+        .super-admin-title {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <span class="super-admin-title">SUPER ADMINISTRADOR</span>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                     ¡Bienvenido, {{ session.full_name or current_user.username }}!
+                </span>
+                <a class="nav-link" href="{{ url_for('mi_cuenta') }}">
+                    <i class="fas fa-user-cog"></i> Mi Cuenta
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2><i class="fas fa-tachometer-alt"></i> Panel de Control Principal</h2>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mt-4">
+            <div class="col-md-2 mb-3">
+                <div class="card stats-card text-center">
+                    <div class="card-body">
+                        <div class="icon-wrapper" style="--icon-color-1: #667eea; --icon-color-2: #764ba2;">
+                            <i class="fas fa-map-marker-alt fa-2x text-white"></i>
+                        </div>
+                        <h3 class="fw-bold text-primary">{{ stats.total_parroquias }}</h3>
+                        <p class="text-muted mb-0">Parroquias</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="card stats-card text-center">
+                    <div class="card-body">
+                        <div class="icon-wrapper" style="--icon-color-1: #56ab2f; --icon-color-2: #a8e6cf;">
+                            <i class="fas fa-user-tie fa-2x text-white"></i>
+                        </div>
+                        <h3 class="fw-bold text-success">{{ stats.total_usuarios }}</h3>
+                        <p class="text-muted mb-0">Usuarios</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="card stats-card text-center">
+                    <div class="card-body">
+                        <div class="icon-wrapper" style="--icon-color-1: #4facfe; --icon-color-2: #00f2fe;">
+                            <i class="fas fa-boxes fa-2x text-white"></i>
+                        </div>
+                        <h3 class="fw-bold text-info">{{ stats.total_bienes }}</h3>
+                        <p class="text-muted mb-0">Total Bienes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="card stats-card text-center">
+                    <div class="card-body">
+                        <div class="icon-wrapper" style="--icon-color-1: #f093fb; --icon-color-2: #f5576c;">
+                            <i class="fas fa-hand-holding fa-2x text-white"></i>
+                        </div>
+                        <h3 class="fw-bold text-warning">{{ stats.bienes_asignados }}</h3>
+                        <p class="text-muted mb-0">Bienes Asignados</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="card stats-card text-center">
+                    <div class="card-body">
+                        <div class="icon-wrapper" style="--icon-color-1: #a8edea; --icon-color-2: #fed6e3;">
+                            <i class="fas fa-users fa-2x text-dark"></i>
+                        </div>
+                        <h3 class="fw-bold text-secondary">{{ stats.total_tecnicos }}</h3>
+                        <p class="text-muted mb-0">Técnicos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menú de opciones -->
+        <div class="row mt-5">
+            <div class="col-md-4 mb-4">
+                <div class="card management-card h-100">
+                    <div class="card-body text-center d-flex flex-column p-4">
+                        <div class="icon-wrapper" style="--icon-color-1: #667eea; --icon-color-2: #764ba2;">
+                            <i class="fas fa-map-marker-alt fa-2x text-white"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Gestionar Parroquias</h5>
+                        <p class="flex-grow-1 text-muted">Crear, editar y eliminar parroquias del sistema</p>
+                        <a href="{{ url_for('super_admin', section='parroquias') }}" class="btn btn-primary btn-modern">
+                            <i class="fas fa-cog"></i> Gestionar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card management-card h-100">
+                    <div class="card-body text-center d-flex flex-column p-4">
+                        <div class="icon-wrapper" style="--icon-color-1: #56ab2f; --icon-color-2: #a8e6cf;">
+                            <i class="fas fa-users fa-2x text-white"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Gestionar Usuarios</h5>
+                        <p class="flex-grow-1 text-muted">Crear administradores de parroquia y técnicos</p>
+                        <a href="{{ url_for('super_admin', section='usuarios') }}" class="btn btn-success btn-modern">
+                            <i class="fas fa-user-plus"></i> Gestionar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card management-card h-100">
+                    <div class="card-body text-center d-flex flex-column p-4">
+                        <div class="icon-wrapper" style="--icon-color-1: #4facfe; --icon-color-2: #00f2fe;">
+                            <i class="fas fa-chart-bar fa-2x text-white"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Reportes</h5>
+                        <p class="flex-grow-1 text-muted">Ver reportes globales y estadísticas del sistema</p>
+                        <div class="d-flex flex-wrap gap-1 justify-content-center mb-3">
+                            <a href="{{ url_for('generar_reporte_pdf', tipo='general') }}" class="btn btn-sm btn-outline-danger rounded-pill">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </a>
+                            <a href="{{ url_for('exportar_excel', tipo='general') }}" class="btn btn-sm btn-outline-success rounded-pill">
+                                <i class="fas fa-file-excel"></i> Excel
+                            </a>
+                        </div>
+                        <a href="{{ url_for('super_admin', section='estadisticas') }}" class="btn btn-info btn-modern">
+                            <i class="fas fa-chart-line"></i> Ver Estadísticas
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card management-card h-100">
+                    <div class="card-body text-center d-flex flex-column p-4">
+                        <div class="icon-wrapper" style="--icon-color-1: #f093fb; --icon-color-2: #f5576c;">
+                            <i class="fas fa-shield-alt fa-2x text-white"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Auditoría</h5>
+                        <p class="flex-grow-1 text-muted">Ver logs de actividad y auditoría del sistema</p>
+                        <a href="{{ url_for('super_admin', section='auditoria') }}" class="btn btn-warning btn-modern">
+                            <i class="fas fa-search"></i> Ver Logs
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card management-card h-100">
+                    <div class="card-body text-center d-flex flex-column p-4">
+                        <div class="icon-wrapper" style="--icon-color-1: #ff6b6b; --icon-color-2: #ee5a24;">
+                            <i class="fas fa-tools fa-2x text-white"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Mantenimiento</h5>
+                        <p class="flex-grow-1 text-muted">Limpiar datos y mantenimiento del sistema</p>
+                        <a href="{{ url_for('super_admin', section='mantenimiento') }}" class="btn btn-danger btn-modern">
+                            <i class="fas fa-wrench"></i> Mantenimiento
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5></i> Sistema de Inventario CONA</h5>
+                    <p class="mb-0">Gestión jerárquica de bienes tecnológicos para 61 parroquias</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1"><strong>CONAGOPARE</strong></p>
+                    <p class="mb-1">Consejo Nacional de Gobiernos Parroquiales Rurales del Ecuador</p>
+                    <small class="text-muted">Sistema desarrollado {{ datetime.now().year }}</small>
+                </div>
+            </div>
+            <hr class="my-3">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <small class="text-muted">© {{ datetime.now().year }} CONAGOPARE. Todos los derechos reservados.</small>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <small class="text-muted">Versión 2.0 | Usuario: {{ current_user.username }}</small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div class="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Show Flask flash messages
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    showToast('{{ message }}', '{{ category }}');
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </script>
+</body>
+</html>

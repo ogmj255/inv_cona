@@ -1,0 +1,271 @@
+/* Estilos personalizados para el Sistema de Inventario CONA */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+.login-card {
+    max-width: 400px;
+    width: 100%;
+    border-radius: 18px;
+    box-shadow: 0 6px 24px rgba(30, 64, 175, 0.1), 0 2px 8px rgba(0, 0, 0, 0.08);
+    background: #ffffff;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.login-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 32px rgba(30, 64, 175, 0.15), 0 3px 12px rgba(0, 0, 0, 0.1);
+}
+
+.login-card .logo {
+    max-width: 220px;
+}
+
+.login-card .card-header {
+    background: transparent;
+    border-bottom: none;
+    padding: 0;
+}
+
+.login-card .card-title {
+    color: #1e3a8a;
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+/* Navbar personalizado */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
+/* Cards con sombra */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Estadísticas cards */
+.card.bg-primary,
+.card.bg-success,
+.card.bg-info,
+.card.bg-warning {
+    border: none;
+}
+
+.card.bg-primary:hover,
+.card.bg-success:hover,
+.card.bg-info:hover,
+.card.bg-warning:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Botones personalizados */
+.btn {
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Tablas */
+.table {
+    background-color: white;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Badges */
+.badge {
+    font-size: 0.75em;
+    font-weight: 500;
+}
+
+/* Formularios */
+.form-control,
+.form-select {
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Alertas */
+.alert {
+    border-radius: 0.5rem;
+    border: none;
+}
+
+.alert-success {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+/* Login page */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Dashboard icons */
+.dashboard-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Estados de bienes */
+.estado-disponible {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.estado-asignado {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+.estado-mantenimiento {
+    background-color: #cff4fc;
+    color: #055160;
+}
+
+.estado-danado {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+/* Sidebar para futuras mejoras */
+.sidebar {
+    background-color: #343a40;
+    min-height: 100vh;
+    padding-top: 1rem;
+}
+
+.sidebar .nav-link {
+    color: #adb5bd;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 0.25rem;
+}
+
+.sidebar .nav-link:hover {
+    color: #fff;
+    background-color: #495057;
+}
+
+.sidebar .nav-link.active {
+    color: #fff;
+    background-color: #0d6efd;
+}
+
+/* Loading spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+.alert {
+    margin: 0 !important;
+    position:  fixed !important;
+    top: 20px;
+    right: 20px;
+    left: auto !important;
+    width: 350px;
+    max-width: 90vw;
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(30, 64, 175, 0.1), 0 2px 8px rgba(0, 0, 0, 0.08);
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: fadeIn 0.5s ease-in-out;
+    border-left: 6px solid #1e3a8a;
+    background: #ffffff;
+    z-index: 2000;
+}

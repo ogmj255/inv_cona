@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Técnico - Sistema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-info">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-tools"></i> Técnico - {{ parroquia.nombre if parroquia else 'Sistema CONA' }}
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user"></i> {{ current_user.nombre }} {{ current_user.apellido }}
+                </span>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2><i class="fas fa-tachometer-alt"></i> Mi Dashboard - {{ parroquia.nombre if parroquia else 'Técnico' }}</h2>
+            </div>
+        </div>
+
+        <!-- Información del técnico -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h5><i class="fas fa-info-circle"></i> Información Personal</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Nombre:</strong> {{ current_user.nombre }} {{ current_user.apellido }}</p>
+                                <p><strong>Usuario:</strong> {{ current_user.username }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Parroquia:</strong> {{ parroquia.nombre if parroquia else 'No asignada' }}</p>
+                                <p><strong>Cantón:</strong> {{ parroquia.canton if parroquia else 'N/A' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bienes asignados -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-boxes"></i> Mis Bienes Asignados ({{ bienes|length }})</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if bienes %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Nombre</th>
+                                        <th>Tipo</th>
+                                        <th>Marca</th>
+                                        <th>Modelo</th>
+                                        <th>Fecha Asignación</th>
+                                        <th>Observaciones</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for asignacion in bienes %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-primary">{{ asignacion.bien[0].codigo if asignacion.bien else 'N/A' }}</span>
+                                        </td>
+                                        <td>{{ asignacion.bien[0].nombre if asignacion.bien else 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ asignacion.bien[0].tipo if asignacion.bien else 'N/A' }}</span>
+                                        </td>
+                                        <td>{{ asignacion.bien[0].marca if asignacion.bien else 'N/A' }}</td>
+                                        <td>{{ asignacion.bien[0].modelo if asignacion.bien else 'N/A' }}</td>
+                                        <td>{{ asignacion.fecha_asignacion.strftime('%d/%m/%Y') if asignacion.fecha_asignacion else 'N/A' }}</td>
+                                        <td>{{ asignacion.observaciones or 'Sin observaciones' }}</td>
+                                        <td>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle"></i> Asignado
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No tienes bienes asignados</h5>
+                            <p class="text-muted">Contacta con tu administrador de parroquia para solicitar la asignación de bienes.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información adicional -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card border-info">
+                    <div class="card-body text-center">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning mb-3"></i>
+                        <h6>Responsabilidades</h6>
+                        <p class="small text-muted">
+                            Eres responsable del cuidado y buen uso de los bienes asignados. 
+                            Reporta cualquier daño o problema inmediatamente.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <i class="fas fa-phone fa-2x text-success mb-3"></i>
+                        <h6>Contacto</h6>
+                        <p class="small text-muted">
+                            Para reportar problemas o solicitar soporte, contacta con tu 
+                            administrador de parroquia o el departamento de sistemas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

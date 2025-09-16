@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas - {{ parroquia.nombre }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .stats-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        .modern-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand, .nav-link {
+            color: #333 !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('admin_parroquia') }}">
+                <i class="fas fa-building text-success"></i> <strong>{{ parroquia.nombre }} - Estadísticas</strong>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('admin_parroquia') }}">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-chart-bar"></i> Estadísticas de {{ parroquia.nombre }}</h2>
+                        <p class="text-muted">Resumen detallado del inventario y asignaciones de la parroquia</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('generar_reporte_pdf', tipo='inventario') }}" class="btn btn-danger me-2">
+                            <i class="fas fa-file-pdf"></i> PDF Inventario
+                        </a>
+                        <a href="{{ url_for('generar_reporte_pdf', tipo='asignaciones') }}" class="btn btn-outline-danger">
+                            <i class="fas fa-file-pdf"></i> PDF Asignaciones
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas generales -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="card stats-card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ stats.total_bienes }}</h4>
+                                <p>Total Bienes</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-boxes fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ stats.bienes_disponibles }}</h4>
+                                <p>Disponibles</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ stats.bienes_asignados }}</h4>
+                                <p>Asignados</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-hand-holding fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ estadisticas.responsables_activos|length }}</h4>
+                                <p>Responsables Activos</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-users fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <div class="card modern-card">
+                    <div class="card-header bg-transparent border-0">
+                        <h5><i class="fas fa-chart-pie text-primary"></i> Bienes por Tipo</h5>
+                    </div>
+                    <div class="card-body" style="height: 200px;">
+                        <canvas id="tiposChart" height="50"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card modern-card">
+                    <div class="card-header bg-transparent border-0">
+                        <h5><i class="fas fa-chart-bar text-success"></i> Estado de los Bienes</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="estadosChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tablas de información -->
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-list"></i> Distribución por Tipo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Tipo de Bien</th>
+                                        <th>Cantidad</th>
+                                        <th>Porcentaje</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tipo in estadisticas.bienes_por_tipo %}
+                                    <tr>
+                                        <td>{{ tipo._id or 'Sin especificar' }}</td>
+                                        <td><span class="badge bg-primary">{{ tipo.cantidad }}</span></td>
+                                        <td>{{ "%.1f"|format((tipo.cantidad / stats.total_bienes * 100) if stats.total_bienes > 0 else 0) }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-users"></i> Responsables Activos</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if estadisticas.responsables_activos %}
+                            <div class="row">
+                                {% for responsable in estadisticas.responsables_activos %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user-circle text-success me-2"></i>
+                                        <span>{{ responsable }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                <p>No hay responsables con bienes asignados actualmente</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información adicional -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> Información de la Parroquia</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Nombre:</strong> {{ parroquia.nombre }}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Cantón:</strong> {{ parroquia.canton }}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Código:</strong> {{ parroquia.codigo }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Gráfico de bienes por tipo
+        const tiposCtx = document.getElementById('tiposChart').getContext('2d');
+        const tiposData = [
+            {% for tipo in estadisticas.bienes_por_tipo %}
+            {
+                label: '{{ tipo._id or "Sin especificar" }}',
+                value: {{ tipo.cantidad }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        const tiposChart = new Chart(tiposCtx, {
+            type: 'pie',
+            data: {
+                labels: tiposData.map(item => item.label),
+                datasets: [{
+                    data: tiposData.map(item => item.value),
+                    backgroundColor: [
+                        '#007bff',
+                        '#28a745',
+                        '#ffc107',
+                        '#dc3545',
+                        '#17a2b8',
+                        '#6f42c1'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Gráfico de estado de bienes
+        const estadosCtx = document.getElementById('estadosChart').getContext('2d');
+        const estadosChart = new Chart(estadosCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Disponibles', 'Asignados', 'En Mantenimiento'],
+                datasets: [{
+                    label: 'Cantidad',
+                    data: [
+                        {{ stats.bienes_disponibles }},
+                        {{ stats.bienes_asignados }},
+                        {{ stats.bienes_mantenimiento }}
+                    ],
+                    backgroundColor: [
+                        '#28a745',
+                        '#ffc107',
+                        '#17a2b8'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asignar Bienes - Sistema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .modern-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .modern-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand, .nav-link {
+            color: #333 !important;
+        }
+        .btn-modern {
+            border-radius: 25px;
+            padding: 8px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('admin_parroquia') }}">
+                <i class="fas fa-building text-success"></i> <strong>Sistema Inventario</strong>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('admin_parroquia') }}">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2><i class="fas fa-user-check"></i> Asignar Bienes a Técnicos</h2>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Formulario para asignar bien -->
+        <div class="card modern-card mt-4">
+            <div class="card-header bg-transparent border-0">
+                <h5><i class="fas fa-hand-holding text-primary"></i> Asignar Nuevo Bien</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="bien_id" class="form-label">Bien Disponible</label>
+                                <select class="form-select" id="bien_id" name="bien_id" required>
+                                    <option value="">Seleccionar bien</option>
+                                    {% for bien in bienes %}
+                                    <option value="{{ bien._id }}">{{ bien.codigo }} - {{ bien.nombre }} ({{ bien.tipo }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="tecnico_id" class="form-label">Técnico</label>
+                                <select class="form-select" id="tecnico_id" name="tecnico_id" required>
+                                    <option value="">Seleccionar técnico</option>
+                                    {% for tecnico in tecnicos %}
+                                    <option value="{{ tecnico._id }}">{{ tecnico.nombre }} {{ tecnico.apellido }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="fecha_asignacion" class="form-label">Fecha de Asignación</label>
+                                <input type="date" class="form-control" id="fecha_asignacion" name="fecha_asignacion" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="observaciones" class="form-label">Observaciones</label>
+                                <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" name="asignar_bien" class="btn btn-primary btn-modern">
+                        <i class="fas fa-hand-holding"></i> Asignar Bien
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lista de asignaciones activas -->
+        <div class="card modern-card mt-4">
+            <div class="card-header bg-transparent border-0">
+                <h5><i class="fas fa-list text-success"></i> Bienes Asignados Actualmente</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Código Bien</th>
+                                <th>Nombre Bien</th>
+                                <th>Tipo</th>
+                                <th>Técnico Asignado</th>
+                                <th>Fecha Asignación</th>
+                                <th>Observaciones</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for asignacion in asignaciones %}
+                            <tr>
+                                <td>{{ asignacion.bien[0].codigo if asignacion.bien else 'N/A' }}</td>
+                                <td>{{ asignacion.bien[0].nombre if asignacion.bien else 'N/A' }}</td>
+                                <td>{{ asignacion.bien[0].tipo if asignacion.bien else 'N/A' }}</td>
+                                <td>{{ asignacion.tecnico[0].nombre if asignacion.tecnico else 'N/A' }} {{ asignacion.tecnico[0].apellido if asignacion.tecnico else '' }}</td>
+                                <td>{{ asignacion.fecha_asignacion.strftime('%d/%m/%Y') if asignacion.fecha_asignacion else 'N/A' }}</td>
+                                <td>{{ asignacion.observaciones or 'Sin observaciones' }}</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm btn-modern" onclick="AssignmentManager.returnBien('{{ asignacion._id }}', '{{ asignacion.bien_id }}')">
+                                        <i class="fas fa-undo"></i> Devolver
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

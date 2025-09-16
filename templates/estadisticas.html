@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas - Sistema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .stats-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        .modern-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand, .nav-link {
+            color: #333 !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('super_admin') }}">
+                <i class="fas fa-crown text-warning"></i> <strong>Estadísticas del Sistema</strong>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('super_admin') }}">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2><i class="fas fa-chart-bar"></i> Estadísticas del Sistema</h2>
+                <p class="text-muted">Resumen completo del estado del inventario y usuarios</p>
+            </div>
+        </div>
+
+        <!-- Estadísticas generales -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="card stats-card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ stats.total_parroquias }}</h4>
+                                <p>Total Parroquias</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-map-marker-alt fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ estadisticas.parroquias_con_bienes|length }}</h4>
+                                <p>Parroquias con Bienes</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ stats.total_bienes }}</h4>
+                                <p>Total Bienes</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-boxes fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ estadisticas.asignaciones_activas }}</h4>
+                                <p>Asignaciones Activas</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-hand-holding fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <div class="card modern-card">
+                    <div class="card-header bg-transparent border-0">
+                        <h5><i class="fas fa-chart-pie text-primary"></i> Estado de los Bienes</h5>
+                    </div>
+                    <div class="card-body" style="height: 180px;">
+                        <canvas id="bienesChart" height="60"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card modern-card">
+                    <div class="card-header bg-transparent border-0">
+                        <h5><i class="fas fa-chart-doughnut text-success"></i> Usuarios por Rol</h5>
+                    </div>
+                    <div class="card-body" style="height: 180px;">
+                        <canvas id="usuariosChart" height="60"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Parroquias -->
+        <div class="row mt-5">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-trophy"></i> Top 5 Parroquias con Más Bienes</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Posición</th>
+                                        <th>Parroquia</th>
+                                        <th>Cantón</th>
+                                        <th>Total Bienes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in top_parroquias %}
+                                    <tr>
+                                        <td>
+                                            {% if loop.index == 1 %}
+                                                <i class="fas fa-trophy text-warning"></i> {{ loop.index }}
+                                            {% elif loop.index == 2 %}
+                                                <i class="fas fa-medal text-secondary"></i> {{ loop.index }}
+                                            {% elif loop.index == 3 %}
+                                                <i class="fas fa-medal text-warning"></i> {{ loop.index }}
+                                            {% else %}
+                                                {{ loop.index }}
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ item.parroquia_info.nombre }}</td>
+                                        <td>{{ item.parroquia_info.canton }}</td>
+                                        <td><span class="badge bg-primary">{{ item.total_bienes }}</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> Resumen de Asignaciones</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Asignaciones Activas:</span>
+                                <span class="badge bg-success">{{ estadisticas.asignaciones_activas }}</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Asignaciones Devueltas:</span>
+                                <span class="badge bg-info">{{ estadisticas.asignaciones_devueltas }}</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Total Asignaciones:</span>
+                                <span class="badge bg-primary">{{ estadisticas.asignaciones_activas + estadisticas.asignaciones_devueltas }}</span>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Super Administradores:</span>
+                                <span class="badge bg-danger">{{ estadisticas.usuarios_por_rol.super_admin }}</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Admins de Parroquia:</span>
+                                <span class="badge bg-success">{{ estadisticas.usuarios_por_rol.admin_parroquia }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Gráfico de estado de bienes
+        const bienesCtx = document.getElementById('bienesChart').getContext('2d');
+        const bienesChart = new Chart(bienesCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Disponibles', 'Asignados', 'En Mantenimiento', 'Dañados'],
+                datasets: [{
+                    data: [
+                        {{ estadisticas.bienes_por_estado.disponibles }},
+                        {{ estadisticas.bienes_por_estado.asignados }},
+                        {{ estadisticas.bienes_por_estado.mantenimiento }},
+                        {{ estadisticas.bienes_por_estado.dañados }}
+                    ],
+                    backgroundColor: [
+                        '#28a745',
+                        '#ffc107',
+                        '#17a2b8',
+                        '#dc3545'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Gráfico de usuarios por rol
+        const usuariosCtx = document.getElementById('usuariosChart').getContext('2d');
+        const usuariosChart = new Chart(usuariosCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Super Administradores', 'Administradores de Parroquia'],
+                datasets: [{
+                    data: [
+                        {{ estadisticas.usuarios_por_rol.super_admin }},
+                        {{ estadisticas.usuarios_por_rol.admin_parroquia }}
+                    ],
+                    backgroundColor: [
+                        '#dc3545',
+                        '#28a745'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

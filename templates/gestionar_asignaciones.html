@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionar Asignaciones - Sistema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .modern-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .modern-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand, .nav-link {
+            color: #333 !important;
+        }
+        .btn-modern {
+            border-radius: 25px;
+            padding: 8px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('admin_parroquia') }}">
+                <i class="fas fa-building text-success"></i> <strong>{{ parroquia.nombre }} - Asignaciones</strong>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('admin_parroquia') }}">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card modern-card">
+                    <div class="card-header bg-transparent border-0">
+                        <h5><i class="fas fa-hand-holding text-primary"></i> Asignar Bien</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label class="form-label">Bien a Asignar</label>
+                                <select class="form-control" name="bien_id" required>
+                                    <option value="">Seleccionar bien...</option>
+                                    {% for bien in bienes_disponibles %}
+                                    <option value="{{ bien._id }}">{{ bien.codigo }} - {{ bien.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Responsable</label>
+                                <input type="text" class="form-control" name="responsable" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Observaciones</label>
+                                <textarea class="form-control" name="observaciones" rows="3"></textarea>
+                            </div>
+                            <button type="submit" name="asignar_bien" class="btn btn-success btn-modern">
+                                <i class="fas fa-check"></i> Asignar Bien
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card modern-card">
+                    <div class="card-header bg-transparent border-0">
+                        <h5><i class="fas fa-list text-success"></i> Bienes Asignados</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Bien</th>
+                                        <th>Responsable</th>
+                                        <th>Fecha Asignación</th>
+                                        <th>Observaciones</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for asignacion in asignaciones %}
+                                    <tr>
+                                        <td>{{ asignacion.bien_info.codigo }} - {{ asignacion.bien_info.nombre }}</td>
+                                        <td>{{ asignacion.responsable }}</td>
+                                        <td>{{ asignacion.fecha_asignacion.strftime('%d/%m/%Y') if asignacion.fecha_asignacion else 'N/A' }}</td>
+                                        <td>{{ asignacion.observaciones or 'N/A' }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info" onclick="editAsignacion('{{ asignacion._id }}', '{{ asignacion.responsable }}', '{{ asignacion.observaciones or "" }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <form method="POST" style="display: inline;">
+                                                <input type="hidden" name="asignacion_id" value="{{ asignacion._id }}">
+                                                <input type="hidden" name="bien_id" value="{{ asignacion.bien_id }}">
+                                                <button type="submit" name="devolver_bien" class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-undo"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar esta asignación?')">
+                                                <input type="hidden" name="asignacion_id" value="{{ asignacion._id }}">
+                                                <input type="hidden" name="bien_id" value="{{ asignacion.bien_id }}">
+                                                <button type="submit" name="delete_asignacion" class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Asignación -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Asignación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="asignacion_id" id="edit_asignacion_id">
+                        <div class="mb-3">
+                            <label class="form-label">Responsable</label>
+                            <input type="text" class="form-control" name="edit_responsable" id="edit_responsable" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Observaciones</label>
+                            <textarea class="form-control" name="edit_observaciones" id="edit_observaciones" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" name="edit_asignacion" class="btn btn-primary">Actualizar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

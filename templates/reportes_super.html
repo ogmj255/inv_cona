@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes Globales - Sistema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('super_admin') }}">
+                <i class="fas fa-boxes"></i> Sistema Inventario
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('super_admin') }}">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2><i class="fas fa-chart-bar"></i> Reportes y Estadísticas Globales</h2>
+            </div>
+        </div>
+
+        <!-- Estadísticas principales -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
+                        <h3>{{ stats.total_parroquias }}</h3>
+                        <p>Parroquias Registradas</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-users fa-2x mb-2"></i>
+                        <h3>{{ stats.total_usuarios }}</h3>
+                        <p>Usuarios Activos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-boxes fa-2x mb-2"></i>
+                        <h3>{{ stats.total_bienes }}</h3>
+                        <p>Total de Bienes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-hand-holding fa-2x mb-2"></i>
+                        <h3>{{ stats.bienes_asignados }}</h3>
+                        <p>Bienes Asignados</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos de distribución -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-pie"></i> Bienes por Estado</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="estadoChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-doughnut"></i> Bienes por Tipo</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="tipoChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de distribución por parroquia -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-table"></i> Distribución por Parroquia</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Parroquia</th>
+                                <th>Cantón</th>
+                                <th>Total Bienes</th>
+                                <th>Bienes Asignados</th>
+                                <th>Técnicos</th>
+                                <th>Administradores</th>
+                            </tr>
+                        </thead>
+                        <tbody id="parroquias_table">
+                            <!-- Se llenará con JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <button class="btn btn-primary me-2" onclick="Dashboard.refreshStats()">
+                    <i class="fas fa-sync-alt"></i> Actualizar Datos
+                </button>
+                <button class="btn btn-success me-2" onclick="exportToPDF()">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </button>
+                <button class="btn btn-info" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel"></i> Exportar Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Datos para los gráficos
+        const estadoData = {{ stats.bienes_por_estado | tojson }};
+        const tipoData = {{ stats.bienes_por_tipo | tojson }};
+
+        // Crear gráfico de estados
+        const estadoCtx = document.getElementById('estadoChart').getContext('2d');
+        new Chart(estadoCtx, {
+            type: 'pie',
+            data: {
+                labels: estadoData.map(item => item._id.replace('_', ' ').toUpperCase()),
+                datasets: [{
+                    data: estadoData.map(item => item.count),
+                    backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Crear gráfico de tipos
+        const tipoCtx = document.getElementById('tipoChart').getContext('2d');
+        new Chart(tipoCtx, {
+            type: 'doughnut',
+            data: {
+                labels: tipoData.map(item => item._id),
+                datasets: [{
+                    data: tipoData.map(item => item.count),
+                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        function exportToPDF() {
+            Utils.showToast('Función de exportar PDF en desarrollo', 'info');
+        }
+
+        function exportToExcel() {
+            Utils.showToast('Función de exportar Excel en desarrollo', 'info');
+        }
+    </script>
+</body>
+</html>

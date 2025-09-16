@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mantenimiento - Sistema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('super_admin') }}">
+                <i class="fas fa-tools"></i> Sistema - Mantenimiento
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('super_admin') }}">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>¡ZONA DE PELIGRO!</strong> Las acciones en esta sección pueden eliminar datos permanentemente. Procede con extrema precaución.
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <h2><i class="fas fa-wrench"></i> Mantenimiento del Sistema</h2>
+                <p class="text-muted">Herramientas para limpiar y mantener la base de datos del sistema</p>
+            </div>
+        </div>
+
+        <!-- Estadísticas de Mantenimiento -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ stats.total_logs }}</h4>
+                                <p>Logs de Auditoría</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-file-alt fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ stats.total_notificaciones }}</h4>
+                                <p>Notificaciones</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-bell fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-secondary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ stats.asignaciones_devueltas }}</h4>
+                                <p>Asignaciones Devueltas</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-undo fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-dark text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ stats.logs_antiguos }}</h4>
+                                <p>Logs Antiguos (>90 días)</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-clock fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones de Mantenimiento -->
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <h5><i class="fas fa-broom"></i> Limpieza Selectiva</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Eliminar datos específicos del sistema</p>
+                        
+                        <!-- Limpiar Logs -->
+                        <div class="mb-3">
+                            <h6>Limpiar Logs de Auditoría</h6>
+                            <p class="small text-muted">Elimina todos los logs de auditoría ({{ stats.total_logs }} registros)</p>
+                            <form method="POST" onsubmit="return confirmarAccion('limpiar_logs')">
+                                <input type="hidden" name="accion" value="limpiar_logs">
+                                <div class="mb-2">
+                                    <input type="text" class="form-control" name="confirmacion" placeholder="Escriba: CONFIRMAR LIMPIEZA" required>
+                                </div>
+                                <button type="submit" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-trash"></i> Limpiar Logs
+                                </button>
+                            </form>
+                        </div>
+
+                        <hr>
+
+                        <!-- Limpiar Notificaciones -->
+                        <div class="mb-3">
+                            <h6>Limpiar Notificaciones</h6>
+                            <p class="small text-muted">Elimina todas las notificaciones ({{ stats.total_notificaciones }} registros)</p>
+                            <form method="POST" onsubmit="return confirmarAccion('limpiar_notificaciones')">
+                                <input type="hidden" name="accion" value="limpiar_notificaciones">
+                                <div class="mb-2">
+                                    <input type="text" class="form-control" name="confirmacion" placeholder="Escriba: CONFIRMAR LIMPIEZA" required>
+                                </div>
+                                <button type="submit" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-trash"></i> Limpiar Notificaciones
+                                </button>
+                            </form>
+                        </div>
+
+                        <hr>
+
+                        <!-- Limpiar Asignaciones Devueltas -->
+                        <div class="mb-3">
+                            <h6>Limpiar Asignaciones Devueltas</h6>
+                            <p class="small text-muted">Elimina asignaciones ya devueltas ({{ stats.asignaciones_devueltas }} registros)</p>
+                            <form method="POST" onsubmit="return confirmarAccion('limpiar_asignaciones_devueltas')">
+                                <input type="hidden" name="accion" value="limpiar_asignaciones_devueltas">
+                                <div class="mb-2">
+                                    <input type="text" class="form-control" name="confirmacion" placeholder="Escriba: CONFIRMAR LIMPIEZA" required>
+                                </div>
+                                <button type="submit" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-trash"></i> Limpiar Asignaciones
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Zona de Peligro Extremo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-danger">
+                            <strong>¡PELIGRO!</strong> Esta acción eliminará TODOS los datos del sistema excepto usuarios y parroquias.
+                        </div>
+                        
+                        <h6>Reset Completo del Sistema</h6>
+                        <p class="small text-muted">
+                            <strong>Se eliminarán:</strong><br>
+                            • Todos los bienes del inventario<br>
+                            • Todas las asignaciones<br>
+                            • Todos los logs de auditoría<br>
+                            • Todas las notificaciones<br>
+                            <br>
+                            <strong>Se conservarán:</strong><br>
+                            • Usuarios del sistema<br>
+                            • Parroquias registradas
+                        </p>
+                        
+                        <form method="POST" onsubmit="return confirmarResetCompleto()">
+                            <input type="hidden" name="accion" value="reset_completo">
+                            <div class="mb-3">
+                                <label class="form-label">Para confirmar, escriba exactamente:</label>
+                                <input type="text" class="form-control" name="confirmacion" placeholder="CONFIRMAR LIMPIEZA" required>
+                            </div>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-nuclear"></i> RESET COMPLETO
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        function confirmarAccion(accion) {
+            return confirm(`¿Está seguro de realizar la acción: ${accion}?\n\nEsta acción no se puede deshacer.`);
+        }
+
+        function confirmarResetCompleto() {
+            if (!confirm('¿ESTÁ ABSOLUTAMENTE SEGURO de realizar un RESET COMPLETO?\n\nEsto eliminará TODOS los datos del sistema excepto usuarios y parroquias.\n\nEsta acción NO SE PUEDE DESHACER.')) {
+                return false;
+            }
+            
+            if (!confirm('ÚLTIMA CONFIRMACIÓN:\n\n¿Realmente desea proceder con el RESET COMPLETO?\n\nTodos los bienes, asignaciones, logs y notificaciones serán eliminados PERMANENTEMENTE.')) {
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Show Flask flash messages
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    showToast('{{ message }}', '{{ category }}');
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </script>
+</body>
+</html>
