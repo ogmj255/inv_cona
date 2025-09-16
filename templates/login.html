@@ -13,16 +13,7 @@
 
 <body>
     <div class="d-flex align-items-center justify-content-center min-vh-100">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible true fade show"
-            role="alert">
-            {{ message }}
-        </div>
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
+        
         <div class="login-card card shadow-lg border-0 p-4">
             <div class="text-center mb-4">
                 <img src="https://conagopareazuay.gob.ec/w30/wp-content/uploads/2023/05/logoConagopare2.png" alt="Logo"
@@ -63,7 +54,16 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
-    
+    <script>
+        // Show Flask flash messages
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    showToast('{{ message }}', '{{ category }}');
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </script>
 </body>
 
 </html>

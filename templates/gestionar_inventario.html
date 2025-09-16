@@ -200,7 +200,12 @@
                                     <tr>
                                         <td>
                                             {% if bien.imagen %}
-                                                <img src="data:image/jpeg;base64,{{ bien.imagen }}" alt="{{ bien.nombre }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+                                                <div class="image-container" style="position: relative; width: 50px; height: 50px;">
+                                                    <img src="data:image/jpeg;base64,{{ bien.imagen }}" alt="{{ bien.nombre }}" class="hover-image" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px; cursor: pointer; transition: transform 0.3s ease;" onclick="showImageModal('data:image/jpeg;base64,{{ bien.imagen }}', '{{ bien.nombre }}')" title="Click para ampliar">
+                                                    <div class="image-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); border-radius: 5px; display: none; align-items: center; justify-content: center; cursor: pointer;">
+                                                        <i class="fas fa-search-plus text-white"></i>
+                                                    </div>
+                                                </div>
                                             {% else %}
                                                 <div style="width: 50px; height: 50px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; display: flex; align-items: center; justify-content: center;">
                                                     <i class="fas fa-image text-muted"></i>
@@ -241,6 +246,15 @@
                                             <a href="{{ url_for('generar_qr', bien_id=bien._id) }}" class="btn btn-sm btn-info" title="Generar QR">
                                                 <i class="fas fa-qrcode"></i>
                                             </a>
+                                            <button class="btn btn-sm btn-warning" onclick="editBien('{{ bien._id }}', '{{ bien.codigo }}', '{{ bien.nombre }}', '{{ bien.tipo }}', '{{ bien.marca }}', '{{ bien.modelo }}', '{{ bien.descripcion or "" }}')" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <form method="POST" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar este bien?')">
+                                                <input type="hidden" name="bien_id" value="{{ bien._id }}">
+                                                <button type="submit" name="delete_bien" class="btn btn-sm btn-danger" title="Eliminar">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -253,7 +267,125 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div class="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+    <!-- Modal Editar Bien -->
+    <div class="modal fade" id="editBienModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Bien</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="bien_id" id="edit_bien_id">
+                        <div class="mb-3">
+                            <label class="form-label">Código</label>
+                            <input type="text" class="form-control" name="edit_codigo" id="edit_bien_codigo" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" name="edit_nombre" id="edit_bien_nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo</label>
+                            <input type="text" class="form-control" name="edit_tipo" id="edit_bien_tipo" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Marca</label>
+                            <input type="text" class="form-control" name="edit_marca" id="edit_bien_marca" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Modelo</label>
+                            <input type="text" class="form-control" name="edit_modelo" id="edit_bien_modelo" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" name="edit_descripcion" id="edit_bien_descripcion" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" name="edit_bien" class="btn btn-warning">Actualizar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ver Imagen -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalTitle">Imagen del Bien</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" alt="" style="max-width: 100%; height: auto;">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        function editBien(id, codigo, nombre, tipo, marca, modelo, descripcion = '') {
+            document.getElementById('edit_bien_id').value = id;
+            document.getElementById('edit_bien_codigo').value = codigo;
+            document.getElementById('edit_bien_nombre').value = nombre;
+            document.getElementById('edit_bien_tipo').value = tipo;
+            document.getElementById('edit_bien_marca').value = marca;
+            document.getElementById('edit_bien_modelo').value = modelo;
+            document.getElementById('edit_bien_descripcion').value = descripcion;
+            new bootstrap.Modal(document.getElementById('editBienModal')).show();
+        }
+
+        function showImageModal(src, title) {
+            document.getElementById('modalImage').src = src;
+            document.getElementById('imageModalTitle').textContent = title;
+            new bootstrap.Modal(document.getElementById('imageModal')).show();
+        }
+
+        // Image hover effects
+        document.addEventListener('DOMContentLoaded', function() {
+            const imageContainers = document.querySelectorAll('.image-container');
+            imageContainers.forEach(container => {
+                const img = container.querySelector('.hover-image');
+                const overlay = container.querySelector('.image-overlay');
+                
+                container.addEventListener('mouseenter', function() {
+                    if (img) img.style.transform = 'scale(1.2)';
+                    if (overlay) overlay.style.display = 'flex';
+                });
+                
+                container.addEventListener('mouseleave', function() {
+                    if (img) img.style.transform = 'scale(1)';
+                    if (overlay) overlay.style.display = 'none';
+                });
+                
+                // Agregar click event para mostrar modal
+                container.addEventListener('click', function() {
+                    const imgSrc = img ? img.src : '';
+                    const imgTitle = img ? img.alt : 'Imagen';
+                    if (imgSrc) {
+                        showImageModal(imgSrc, imgTitle);
+                    }
+                });
+            });
+        });
+
+        // Show Flask flash messages as toasts
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    showToast('{{ message }}', '{{ category }}');
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </script>
 </body>
 </html>
