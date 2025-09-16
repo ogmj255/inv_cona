@@ -2,13 +2,9 @@ services:
   - type: web
     name: inventario-cona
     env: python
-    runtime: python-3.11.9
-    buildCommand: |
-      pip install --upgrade pip
-      pip install --only-binary=all -r requirements.txt
+    runtime: python-3.10.14
+    buildCommand: pip install -r requirements.txt
     startCommand: python app.py
     envVars:
       - key: PORT
         value: 10000
-      - key: PYTHON_VERSION
-        value: 3.11.9
