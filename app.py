@@ -23,7 +23,12 @@ login_manager.login_view = 'login'
 
 from config import MONGO_URI
 client = MongoClient(MONGO_URI)
-cona_inv = client['cona_inv']
+# Extraer nombre de base de datos de la URI
+if '/' in MONGO_URI and not MONGO_URI.endswith('/'):
+    db_name = MONGO_URI.split('/')[-1].split('?')[0]  # Remover parámetros de query
+else:
+    db_name = 'cona_inv'
+cona_inv = client[db_name]
 users = cona_inv['users']
 parroquias = cona_inv['parroquias']
 inventarios = cona_inv['inventarios']

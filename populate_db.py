@@ -8,7 +8,15 @@ MONGO_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/cona_inv')
 
 try:
     client = MongoClient(MONGO_URI)
-    db = client['cona_inv']
+    # Extraer nombre de base de datos de la URI
+    if '/' in MONGO_URI and not MONGO_URI.endswith('/'):
+        db_name = MONGO_URI.split('/')[-1].split('?')[0]  # Remover parámetros de query
+    else:
+        db_name = 'cona_inv'
+    db = client[db_name]
+    
+    print(f"Conectando a base de datos: {db_name}")
+    print(f"URI: {MONGO_URI[:30]}..." if len(MONGO_URI) > 30 else MONGO_URI)
     
     # Crear usuario super admin por defecto
     users = db['users']
