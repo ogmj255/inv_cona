@@ -115,6 +115,7 @@ def super_admin(section=None):
     if current_user.role != 'super_admin':
         return redirect(url_for('index'))
     
+    # Lógica simplificada del super admin
     stats = {
         'total_parroquias': parroquias.count_documents({}),
         'total_usuarios': users.count_documents({}),
