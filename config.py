@@ -1,9 +1,4 @@
-# Configuración de MongoDB Atlas
-# Actualiza estas credenciales con las correctas
-MONGO_USERNAME = "ogmoscosoj2"
-MONGO_PASSWORD = "iG1h0Y8punlFBa89"
-MONGO_CLUSTER = "conagoparedbinventario.ecb0dj0.mongodb.net"
-MONGO_DATABASE = "cona_inv"
+import os
 
-# Cadena de conexión completa
-MONGO_URI = f"mongodb+srv://{MONGO_USERNAME}:{MONGO_PASSWORD}@{MONGO_CLUSTER}/?retryWrites=true&w=majority&appName=conagoparedbinventario"
+# MongoDB URI - usar variable de entorno o valor por defecto
+MONGO_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/cona_inv')

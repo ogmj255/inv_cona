@@ -20,7 +20,7 @@ import qrcode
 from PIL import Image
 
 app = Flask(__name__)
-app.secret_key = 'a1eb8b7d4c7a96ea202923296486a51c'
+app.secret_key = os.environ.get('SECRET_KEY', 'a1eb8b7d4c7a96ea202923296486a51c')
 
 @app.context_processor
 def inject_datetime():
@@ -908,4 +908,6 @@ def mi_cuenta():
     return response
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), debug=True)
+    port = int(os.environ.get('PORT', 10000))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    app.run(host='0.0.0.0', port=port, debug=debug)
