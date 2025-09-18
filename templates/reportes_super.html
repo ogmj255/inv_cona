@@ -140,53 +140,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script>
-        // Datos para los gráficos
-        const estadoData = {{ stats.bienes_por_estado | tojson }};
-        const tipoData = {{ stats.bienes_por_tipo | tojson }};
-
-        // Crear gráfico de estados
-        const estadoCtx = document.getElementById('estadoChart').getContext('2d');
-        new Chart(estadoCtx, {
-            type: 'pie',
-            data: {
-                labels: estadoData.map(item => item._id.replace('_', ' ').toUpperCase()),
-                datasets: [{
-                    data: estadoData.map(item => item.count),
-                    backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-
-        // Crear gráfico de tipos
-        const tipoCtx = document.getElementById('tipoChart').getContext('2d');
-        new Chart(tipoCtx, {
-            type: 'doughnut',
-            data: {
-                labels: tipoData.map(item => item._id),
-                datasets: [{
-                    data: tipoData.map(item => item.count),
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-
-        function exportToPDF() {
-            Utils.showToast('Función de exportar PDF en desarrollo', 'info');
-        }
-
-        function exportToExcel() {
-            Utils.showToast('Función de exportar Excel en desarrollo', 'info');
-        }
+        window.reportData = {
+            estadoData: {{ stats.bienes_por_estado | tojson }},
+            tipoData: {{ stats.bienes_por_tipo | tojson }}
+        };
     </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

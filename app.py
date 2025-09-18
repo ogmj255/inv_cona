@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_wtf.csrf import CSRFProtect
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 from bson.objectid import ObjectId
@@ -11,6 +12,8 @@ import base64
 from io import BytesIO
 import logging
 from functools import wraps
+import time
+import secrets
 
 # Importar librerías para reportes y QR
 try:
@@ -38,7 +41,78 @@ except ImportError:
     QR_AVAILABLE = False
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'a1eb8b7d4c7a96ea202923296486a51c')
+app.secret_key = secrets.token_hex(32)
+app.config['WTF_CSRF_ENABLED'] = False
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Security headers
+@app.after_request
+def security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    return response
+
+# Rate limiting - Relaxed for login
+request_counts = {}
+def rate_limit(max_requests=10, window=60):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            try:
+                client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+                current_time = time.time()
+                
+                if client_ip not in request_counts:
+                    request_counts[client_ip] = []
+                
+                # Clean old requests
+                request_counts[client_ip] = [req_time for req_time in request_counts[client_ip] 
+                                           if current_time - req_time < window]
+                
+                if len(request_counts[client_ip]) >= max_requests:
+                    if f.__name__ == 'login':
+                        flash('Demasiados intentos de login. Espere un momento.', 'error')
+                        return render_template('login.html')
+                    else:
+                        flash('Demasiadas solicitudes. Intente más tarde.', 'error')
+                        return redirect(url_for('index'))
+                
+                request_counts[client_ip].append(current_time)
+                return f(*args, **kwargs)
+            except Exception as e:
+                print(f"Rate limit error: {e}")
+                return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# CSRF Protection disabled for login issues
+# csrf = CSRFProtect(app)
+
+# File validation
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_UPLOAD_EXTENSIONS = {'xlsx', 'xls', 'csv'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def allowed_upload_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_UPLOAD_EXTENSIONS
+
+def validate_file_content(file):
+    """Validate file content to prevent malicious uploads"""
+    if not file:
+        return False
+    
+    # Check file size
+    file.seek(0, 2)  # Seek to end
+    size = file.tell()
+    file.seek(0)  # Reset to beginning
+    
+    if size > 10 * 1024 * 1024:  # 10MB limit
+        return False
+    
+    return True
 
 @app.context_processor
 def inject_datetime():
@@ -143,16 +217,26 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = users.find_one({'username': username})
-        if user and bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8') if isinstance(user['password'], str) else user['password']):
-            user_obj = User(username=user['username'], role=user['role'], parroquia_id=user.get('parroquia_id'))
-            login_user(user_obj)
-            session['full_name'] = f"{user.get('nombre', '')} {user.get('apellido', '')}".strip() or username
-            log_action('LOGIN', f'Usuario {username} inició sesión', username)
-            return redirect(url_for('index'))
-        flash('Usuario o contraseña incorrectos', 'error')
+        try:
+            username = request.form.get('username', '').strip()
+            password = request.form.get('password', '')
+            
+            if not username or not password:
+                flash('Usuario y contraseña son requeridos', 'error')
+                return render_template('login.html')
+            
+            user = users.find_one({'username': username})
+            if user and bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8') if isinstance(user['password'], str) else user['password']):
+                user_obj = User(username=user['username'], role=user['role'], parroquia_id=user.get('parroquia_id'))
+                login_user(user_obj)
+                session['full_name'] = f"{user.get('nombre', '')} {user.get('apellido', '')}".strip() or username
+                log_action('LOGIN', f'Usuario {username} inició sesión', username)
+                return redirect(url_for('index'))
+            else:
+                flash('Usuario o contraseña incorrectos', 'error')
+        except Exception as e:
+            print(f"Login error: {e}")
+            flash('Error en el sistema de login', 'error')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -205,19 +289,62 @@ def super_admin(section=None):
     }
     
     if section == 'parroquias':
-        parroquias_list = list(parroquias.find())
-        return render_template('gestionar_parroquias.html', stats=stats, parroquias=parroquias_list)
+        return redirect(url_for('gestionar_parroquias'))
     elif section == 'usuarios':
-        usuarios_list = list(users.find())
-        parroquias_list = list(parroquias.find())
-        return render_template('gestionar_usuarios.html', stats=stats, usuarios=usuarios_list, parroquias=parroquias_list)
+        return redirect(url_for('gestionar_usuarios'))
     elif section == 'estadisticas':
         return render_template('estadisticas.html', stats=stats, estadisticas=stats)
     elif section == 'auditoria':
         logs = list(audit_logs.find().sort('timestamp', -1).limit(100))
         return render_template('auditoria.html', stats=stats, logs=logs)
     elif section == 'mantenimiento':
-        return render_template('mantenimiento.html', stats=stats)
+        if request.method == 'POST':
+            accion = request.form.get('accion')
+            confirmacion = request.form.get('confirmacion', '').strip()
+            
+            if confirmacion != 'CONFIRMAR LIMPIEZA':
+                flash('Confirmación incorrecta', 'error')
+                return redirect(url_for('super_admin', section='mantenimiento'))
+            
+            try:
+                if accion == 'limpiar_logs':
+                    result = audit_logs.delete_many({})
+                    flash(f'✅ {result.deleted_count} logs eliminados', 'success')
+                elif accion == 'limpiar_notificaciones':
+                    result = notificaciones.delete_many({})
+                    flash(f'✅ {result.deleted_count} notificaciones eliminadas', 'success')
+                elif accion == 'limpiar_asignaciones_devueltas':
+                    result = bienes_asignados.delete_many({'estado': 'devuelto'})
+                    flash(f'✅ {result.deleted_count} asignaciones devueltas eliminadas', 'success')
+                elif accion == 'limpiar_usuarios':
+                    # Eliminar todos los usuarios EXCEPTO el admin
+                    result = users.delete_many({'username': {'$ne': 'admin'}})
+                    flash(f'✅ {result.deleted_count} usuarios eliminados (admin preservado)', 'success')
+                elif accion == 'reset_completo':
+                    # Eliminar todo excepto parroquias y admin
+                    inventarios.delete_many({})
+                    bienes_asignados.delete_many({})
+                    audit_logs.delete_many({})
+                    notificaciones.delete_many({})
+                    users.delete_many({'username': {'$ne': 'admin'}})
+                    flash('✅ Reset completo realizado. Se conservaron parroquias y usuario admin', 'success')
+                else:
+                    flash('Acción no válida', 'error')
+            except Exception as e:
+                flash(f'Error: {str(e)}', 'error')
+            
+            return redirect(url_for('super_admin', section='mantenimiento'))
+        
+        # Calcular estadísticas de mantenimiento
+        maintenance_stats = {
+            'total_logs': audit_logs.count_documents({}),
+            'total_notificaciones': notificaciones.count_documents({}),
+            'asignaciones_devueltas': bienes_asignados.count_documents({'estado': 'devuelto'}),
+            'logs_antiguos': audit_logs.count_documents({'timestamp': {'$lt': datetime.now() - timedelta(days=90)}}),
+            'total_usuarios': users.count_documents({})
+        }
+        
+        return render_template('mantenimiento.html', stats={**stats, **maintenance_stats})
     
     return render_template('super_admin.html', stats=stats)
 
@@ -435,7 +562,7 @@ def gestionar_usuarios():
             parroquia_id = request.form.get('parroquia_id')
             
             # Validaciones
-            if not all([username, password, nombre, apellido, email, role]):
+            if not username or not password or not nombre or not apellido or not email or not role:
                 flash('Todos los campos son requeridos', 'error')
                 return redirect(url_for('gestionar_usuarios'))
             
@@ -443,18 +570,20 @@ def gestionar_usuarios():
                 flash('La contraseña debe tener al menos 6 caracteres', 'error')
                 return redirect(url_for('gestionar_usuarios'))
             
-            # Verificar username único
+            if role in ['admin_parroquia', 'tecnico'] and (not parroquia_id or parroquia_id == ''):
+                flash('Debe seleccionar una parroquia para este rol', 'error')
+                return redirect(url_for('gestionar_usuarios'))
+            
             if users.find_one({'username': username}):
                 flash('El nombre de usuario ya existe', 'error')
                 return redirect(url_for('gestionar_usuarios'))
             
-            # Verificar email único
             if users.find_one({'email': email}):
                 flash('El email ya está registrado', 'error')
                 return redirect(url_for('gestionar_usuarios'))
             
+            # Crear usuario
             hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-            
             usuario = {
                 'username': username,
                 'password': hashed_password,
@@ -462,45 +591,90 @@ def gestionar_usuarios():
                 'apellido': apellido,
                 'email': email,
                 'role': role,
-                'parroquia_id': ObjectId(parroquia_id) if parroquia_id else None,
+                'parroquia_id': ObjectId(parroquia_id) if parroquia_id and parroquia_id != '' else None,
                 'created_at': datetime.now()
             }
             
-            try:
-                users.insert_one(usuario)
+            result = users.insert_one(usuario)
+            if result.inserted_id:
                 log_action('CREATE_USER', f'Usuario {username} creado con rol {role}')
                 flash('Usuario creado exitosamente', 'success')
-            except Exception as e:
-                flash(f'Error al crear usuario: {str(e)}', 'error')
+            else:
+                flash('Error al crear usuario', 'error')
         
         elif 'edit_user' in request.form:
-            user_id = request.form['user_id']
+            user_id = request.form.get('user_id')
+            if not user_id:
+                flash('ID de usuario inválido', 'error')
+                return redirect(url_for('gestionar_usuarios'))
+            
+            edit_role = request.form.get('edit_role')
+            edit_parroquia_id = request.form.get('edit_parroquia_id')
+            
+            if edit_role in ['admin_parroquia', 'tecnico'] and (not edit_parroquia_id or edit_parroquia_id == ''):
+                flash('Debe seleccionar una parroquia para este rol', 'error')
+                return redirect(url_for('gestionar_usuarios'))
+            
             update_data = {
-                'nombre': request.form['edit_nombre'],
-                'apellido': request.form['edit_apellido'],
-                'username': request.form['edit_username'],
-                'email': request.form['edit_email'],
-                'role': request.form['edit_role'],
-                'parroquia_id': ObjectId(request.form['edit_parroquia_id']) if request.form.get('edit_parroquia_id') else None
+                'nombre': request.form.get('edit_nombre', '').strip(),
+                'apellido': request.form.get('edit_apellido', '').strip(),
+                'username': request.form.get('edit_username', '').strip(),
+                'email': request.form.get('edit_email', '').strip(),
+                'role': edit_role,
+                'parroquia_id': ObjectId(edit_parroquia_id) if edit_parroquia_id and edit_parroquia_id != '' else None
             }
+            
             if request.form.get('edit_password'):
                 update_data['password'] = bcrypt.hashpw(request.form['edit_password'].encode('utf-8'), bcrypt.gensalt())
             
-            try:
-                users.update_one({'_id': ObjectId(user_id)}, {'$set': update_data})
+            result = users.update_one({'_id': ObjectId(user_id)}, {'$set': update_data})
+            if result.modified_count > 0:
+                log_action('UPDATE_USER', f'Usuario {update_data["username"]} actualizado')
                 flash('Usuario actualizado exitosamente', 'success')
-            except Exception as e:
-                flash(f'Error al actualizar usuario: {str(e)}', 'error')
+            else:
+                flash('No se realizaron cambios', 'warning')
+        
+        elif 'delete_log' in request.form:
+            log_id = request.form.get('log_id')
+            if log_id:
+                try:
+                    audit_logs.delete_one({'_id': ObjectId(log_id)})
+                    flash('Log eliminado exitosamente', 'success')
+                except Exception as e:
+                    flash(f'Error al eliminar log: {str(e)}', 'error')
         
         elif 'delete_user' in request.form:
-            user_id = request.form['user_id']
-            try:
-                users.delete_one({'_id': ObjectId(user_id)})
+            user_id = request.form.get('user_id')
+            if not user_id:
+                flash('ID de usuario inválido', 'error')
+                return redirect(url_for('gestionar_usuarios'))
+            
+            # Verificar que no sea el usuario actual
+            user_to_delete = users.find_one({'_id': ObjectId(user_id)})
+            if user_to_delete and user_to_delete['username'] == current_user.username:
+                flash('No puedes eliminar tu propio usuario', 'error')
+                return redirect(url_for('gestionar_usuarios'))
+            
+            result = users.delete_one({'_id': ObjectId(user_id)})
+            if result.deleted_count > 0:
+                log_action('DELETE_USER', f'Usuario eliminado')
                 flash('Usuario eliminado exitosamente', 'success')
-            except Exception as e:
-                flash(f'Error al eliminar usuario: {str(e)}', 'error')
+            else:
+                flash('Error al eliminar usuario', 'error')
+        
+        return redirect(url_for('gestionar_usuarios'))
     
-    usuarios_list = list(users.find())
+    # Get users with parish information
+    usuarios_list = []
+    for usuario in users.find():
+        # Add parish name to user data
+        if usuario.get('parroquia_id'):
+            parroquia = parroquias.find_one({'_id': usuario['parroquia_id']})
+            usuario['parroquia_nombre'] = parroquia['nombre'] if parroquia else None
+        else:
+            usuario['parroquia_nombre'] = None
+        usuarios_list.append(usuario)
+    
     parroquias_list = list(parroquias.find())
     stats = {
         'total_parroquias': parroquias.count_documents({}),
@@ -511,10 +685,203 @@ def gestionar_usuarios():
     }
     return render_template('gestionar_usuarios.html', usuarios=usuarios_list, parroquias=parroquias_list, stats=stats)
 
+@app.route('/cargar_inventario_masivo', methods=['GET', 'POST'])
+@login_required
+def cargar_inventario_masivo():
+    if current_user.role not in ['super_admin', 'admin_parroquia']:
+        flash('❌ No tiene permisos para esta acción', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        try:
+            import pandas as pd
+        except ImportError:
+            flash('❌ Librería pandas no instalada', 'error')
+            return redirect(request.referrer)
+        
+        file = request.files.get('archivo_masivo')
+        if not file or file.filename == '':
+            flash('❌ No se seleccionó archivo', 'error')
+            return redirect(request.referrer)
+        
+        if not allowed_upload_file(file.filename) or not validate_file_content(file):
+            flash('❌ Archivo no válido. Solo Excel (.xlsx, .xls) o CSV', 'error')
+            return redirect(request.referrer)
+        
+        # Get parroquia_id
+        parroquia_id = None
+        if current_user.role == 'admin_parroquia':
+            parroquia_id = ObjectId(current_user.parroquia_id)
+        elif request.form.get('parroquia_id'):
+            parroquia_id = ObjectId(request.form['parroquia_id'])
+        
+        if not parroquia_id:
+            flash('❌ Debe seleccionar una parroquia', 'error')
+            return redirect(request.referrer)
+        
+        try:
+            # Read file
+            if file.filename.lower().endswith('.csv'):
+                df = pd.read_csv(file)
+            else:
+                df = pd.read_excel(file)
+            
+            if df.empty:
+                flash('❌ El archivo está vacío', 'error')
+                return redirect(request.referrer)
+            
+            # Clean column names
+            df.columns = [str(col).strip() for col in df.columns]
+            
+            # Map columns (case insensitive)
+            column_map = {}
+            for col in df.columns:
+                col_lower = col.lower().strip()
+                if col_lower in ['código', 'codigo']:
+                    column_map['codigo'] = col
+                elif col_lower == 'tipo':
+                    column_map['tipo'] = col
+                elif col_lower == 'marca':
+                    column_map['marca'] = col
+                elif col_lower == 'modelo':
+                    column_map['modelo'] = col
+                elif col_lower == 'color':
+                    column_map['color'] = col
+                elif col_lower == 'estado':
+                    column_map['estado'] = col
+                elif col_lower in ['detalle', 'descripcion']:
+                    column_map['descripcion'] = col
+            
+            # Check required columns
+            required = ['tipo', 'marca', 'modelo']
+            missing = [col for col in required if col not in column_map]
+            if missing:
+                flash(f'❌ Faltan columnas: {", ".join(missing)}', 'error')
+                return redirect(request.referrer)
+            
+            created_count = 0
+            error_count = 0
+            errors = []
+            
+            for index, row in df.iterrows():
+                try:
+                    def get_value(key, default='Sin dato'):
+                        if key in column_map:
+                            val = row[column_map[key]]
+                            if pd.isna(val) or str(val).strip() == '':
+                                return default
+                            return str(val).strip()
+                        return default
+                    
+                    tipo = get_value('tipo')
+                    marca = get_value('marca')
+                    modelo = get_value('modelo')
+                    
+                    if tipo == 'Sin dato' or marca == 'Sin dato' or modelo == 'Sin dato':
+                        errors.append(f'Fila {index + 2}: Faltan datos obligatorios')
+                        error_count += 1
+                        continue
+                    
+                    # Generate codigo
+                    codigo = get_value('codigo', '')
+                    if not codigo or codigo == 'Sin dato':
+                        tipo_abrev = tipo[:3].upper()
+                        contador = inventarios.count_documents({'parroquia_id': parroquia_id}) + created_count + 1
+                        codigo = f"{tipo_abrev}{contador:03d}"
+                    
+                    # Check unique codigo
+                    if inventarios.find_one({'codigo': codigo, 'parroquia_id': parroquia_id}):
+                        errors.append(f'Fila {index + 2}: Código {codigo} ya existe')
+                        error_count += 1
+                        continue
+                    
+                    bien_data = {
+                        'codigo': codigo,
+                        'nombre': f"{tipo} - {marca} {modelo}",
+                        'tipo': tipo,
+                        'marca': marca,
+                        'modelo': modelo,
+                        'color': get_value('color'),
+                        'estado_equipo': get_value('estado', 'En funcionamiento'),
+                        'descripcion': get_value('descripcion'),
+                        'estado': 'disponible',
+                        'parroquia_id': parroquia_id,
+                        'created_at': datetime.now()
+                    }
+                    
+                    inventarios.insert_one(bien_data)
+                    created_count += 1
+                    
+                except Exception as e:
+                    errors.append(f'Fila {index + 2}: {str(e)}')
+                    error_count += 1
+            
+            # Show results
+            if created_count > 0:
+                flash(f'✅ {created_count} bienes creados exitosamente', 'success')
+            
+            if error_count > 0:
+                flash(f'⚠️ {error_count} errores. Primeros 3: {"; ".join(errors[:3])}', 'warning')
+            
+            if created_count == 0 and error_count == 0:
+                flash('❌ No se procesaron datos', 'error')
+            
+        except Exception as e:
+            flash(f'❌ Error procesando archivo: {str(e)}', 'error')
+        
+        return redirect(url_for('gestionar_inventario'))
+    
+    # GET request
+    parroquias_list = []
+    if current_user.role == 'super_admin':
+        parroquias_list = list(parroquias.find())
+    
+    return render_template('cargar_inventario_masivo.html', parroquias=parroquias_list)
+
+@app.route('/cambiar_estado_bien', methods=['POST'])
+@login_required
+def cambiar_estado_bien():
+    if current_user.role not in ['super_admin', 'admin_parroquia']:
+        flash('No tiene permisos para esta acción', 'error')
+        return redirect(url_for('index'))
+    
+    bien_id = request.form.get('bien_id')
+    nuevo_estado = request.form.get('nuevo_estado')
+    
+    if not bien_id or not nuevo_estado:
+        flash('Datos incompletos', 'error')
+        return redirect(request.referrer)
+    
+    estados_validos = ['disponible', 'asignado', 'en_mantenimiento', 'dañado']
+    if nuevo_estado not in estados_validos:
+        flash('Estado no válido', 'error')
+        return redirect(request.referrer)
+    
+    try:
+        # Verify ownership for admin_parroquia
+        filter_query = {'_id': ObjectId(bien_id)}
+        if current_user.role == 'admin_parroquia':
+            filter_query['parroquia_id'] = ObjectId(current_user.parroquia_id)
+        
+        result = inventarios.update_one(filter_query, {'$set': {'estado': nuevo_estado}})
+        
+        if result.modified_count > 0:
+            flash(f'Estado del bien actualizado a: {nuevo_estado.replace("_", " ").title()}', 'success')
+        else:
+            flash('No se pudo actualizar el estado del bien', 'error')
+            
+    except Exception as e:
+        flash(f'Error actualizando estado: {str(e)}', 'error')
+    
+    return redirect(request.referrer or url_for('gestionar_inventario'))
+
 @app.route('/gestionar_inventario', methods=['GET', 'POST'])
 @login_required
 def gestionar_inventario():
+    print(f"DEBUG: gestionar_inventario called with method: {request.method}")
     if request.method == 'POST':
+        print(f"DEBUG: POST request received with form keys: {list(request.form.keys())}")
+        print(f"DEBUG: Current user: {current_user.username}, role: {current_user.role}, parroquia_id: {current_user.parroquia_id}")
         if 'edit_bien' in request.form:
             bien_id = request.form.get('bien_id')
             if bien_id:
@@ -542,21 +909,49 @@ def gestionar_inventario():
                 except Exception as e:
                     flash(f'Error al eliminar bien: {str(e)}', 'error')
         elif 'add_bien' in request.form:
+            print("DEBUG: Processing add_bien form")
             codigo = request.form.get('codigo', '').strip()
             nombre = request.form.get('nombre', '').strip()
             tipo = request.form.get('tipo', '').strip()
+            otro_tipo = request.form.get('otro_tipo', '').strip()
             marca = request.form.get('marca', '').strip()
             modelo = request.form.get('modelo', '').strip()
-            estado = 'disponible'
+            color = request.form.get('color', '').strip()
+            estado_equipo = request.form.get('estado_equipo', 'En funcionamiento')
             descripcion = request.form.get('descripcion', '')
             
+            print(f"DEBUG: Form data - codigo: {codigo}, nombre: {nombre}, tipo: {tipo}, marca: {marca}, modelo: {modelo}")
+            
+            # Si seleccionó "Otro" usar el tipo personalizado
+            if tipo == 'Otro' and otro_tipo:
+                tipo = otro_tipo
+                print(f"DEBUG: Using custom type: {tipo}")
+            
             if not all([codigo, nombre, tipo, marca, modelo]):
+                print("DEBUG: Missing required fields")
                 flash('Todos los campos obligatorios son requeridos', 'error')
                 return redirect(url_for('gestionar_inventario'))
             
             if inventarios.find_one({'codigo': codigo}):
+                print(f"DEBUG: Code {codigo} already exists")
                 flash('El código ya existe', 'error')
                 return redirect(url_for('gestionar_inventario'))
+            
+            # Removed Excel processing from individual item creation
+            
+            # Procesar imagen si existe
+            imagen_base64 = None
+            if 'imagen' in request.files:
+                file = request.files['imagen']
+                if file and file.filename != '':
+                    try:
+                        import base64
+                        imagen_data = file.read()
+                        imagen_base64 = base64.b64encode(imagen_data).decode('utf-8')
+                        print(f"DEBUG: Image processed successfully")
+                    except Exception as e:
+                        print(f"DEBUG: Error processing image: {e}")
+                        flash(f'Error al procesar imagen: {str(e)}', 'warning')
             
             bien = {
                 'codigo': codigo,
@@ -564,27 +959,44 @@ def gestionar_inventario():
                 'tipo': tipo,
                 'marca': marca,
                 'modelo': modelo,
-                'estado': estado,
+                'color': color,
+                'estado_equipo': estado_equipo,
+                'estado': 'disponible',
                 'descripcion': descripcion,
+                'imagen': imagen_base64,
                 'parroquia_id': ObjectId(current_user.parroquia_id) if current_user.parroquia_id else None,
                 'created_at': datetime.now()
             }
             
+            print(f"DEBUG: About to insert bien: {bien['codigo']} - {bien['nombre']}")
             try:
-                inventarios.insert_one(bien)
-                log_action('CREATE_BIEN', f'Bien {codigo} - {nombre} creado')
-                flash('Bien creado exitosamente', 'success')
+                result = inventarios.insert_one(bien)
+                print(f"DEBUG: Insert result: {result.inserted_id}")
+                if result.inserted_id:
+                    log_action('CREATE_BIEN', f'Bien {codigo} - {nombre} creado')
+                    flash('Bien creado exitosamente', 'success')
+                    print("DEBUG: Bien created successfully")
+                else:
+                    flash('Error al crear bien', 'error')
+                    print("DEBUG: Failed to create bien")
             except Exception as e:
+                print(f"DEBUG: Exception creating bien: {e}")
                 flash(f'Error al crear bien: {str(e)}', 'error')
+            
+            return redirect(url_for('gestionar_inventario'))
     
     # Filtrar por parroquia si no es super admin
     if current_user.role == 'super_admin':
         bienes_list = list(inventarios.find())
         parroquia_info = {'nombre': 'Sistema CONA', 'canton': 'Ecuador'}
+        print(f"DEBUG: Super admin - found {len(bienes_list)} bienes total")
     else:
         filter_query = {'parroquia_id': ObjectId(current_user.parroquia_id)} if current_user.parroquia_id else {}
+        print(f"DEBUG: Filter query: {filter_query}")
         bienes_list = list(inventarios.find(filter_query))
+        print(f"DEBUG: Found {len(bienes_list)} bienes for current user")
         parroquia_info = parroquias.find_one({'_id': ObjectId(current_user.parroquia_id)}) if current_user.parroquia_id else {'nombre': 'Sistema CONA', 'canton': 'Ecuador'}
+        print(f"DEBUG: Parroquia info: {parroquia_info}")
     
     stats = {
         'total_bienes': len(bienes_list),
@@ -1227,6 +1639,47 @@ def panel_tecnico():
                          tecnico=user_data,
                          bienes=bienes_asignados_tecnico,
                          stats=stats)
+
+@app.route('/descargar_plantilla')
+@login_required
+def descargar_plantilla():
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill
+        
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Plantilla Inventario"
+        
+        # Headers matching your Excel format
+        headers = ['Código', 'Tipo', 'Marca', 'Modelo', 'Color', 'Estado', 'Detalle']
+        ws.append(headers)
+        
+        # Style headers
+        for cell in ws[1]:
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        
+        # Example data
+        ws.append(['PC001', 'Computadora', 'Dell', 'OptiPlex 3070', 'Negro', 'En funcionamiento', 'Computadora para oficina'])
+        ws.append(['LAP001', 'Laptop', 'HP', 'ProBook 450', 'Gris', 'En funcionamiento', 'Laptop para trabajo móvil'])
+        
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        
+        response = make_response(buffer.getvalue())
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = 'attachment; filename="plantilla_inventario.xlsx"'
+        
+        return response
+        
+    except ImportError:
+        flash('Librería openpyxl no instalada', 'error')
+        return redirect(request.referrer or url_for('gestionar_inventario'))
+    except Exception as e:
+        flash(f'Error generando plantilla: {str(e)}', 'error')
+        return redirect(request.referrer or url_for('gestionar_inventario'))
 
 @app.route('/mi_cuenta', methods=['GET', 'POST'])
 @login_required

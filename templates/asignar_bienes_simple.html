@@ -135,30 +135,5 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <script>
-        // Establecer fecha actual por defecto en todos los modales
-        document.addEventListener('DOMContentLoaded', function() {
-            const today = new Date().toISOString().split('T')[0];
-            document.querySelectorAll('input[name="fecha_asignacion"]').forEach(input => {
-                input.value = today;
-            });
-        });
-
-        // Función para devolver bien
-        const AssignmentManager = {
-            returnBien: function(bienId) {
-                if (confirm('¿Está seguro de devolver este bien?')) {
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.innerHTML = `
-                        <input type="hidden" name="bien_id" value="${bienId}">
-                        <input type="hidden" name="devolver_bien" value="1">
-                    `;
-                    document.body.appendChild(form);
-                    form.submit();
-                }
-            }
-        };
-    </script>
 </body>
 </html>

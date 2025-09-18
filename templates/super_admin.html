@@ -94,6 +94,7 @@
     </style>
 </head>
 <body>
+    <!-- Navegación principal -->
     <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container">
             <a class="navbar-brand" href="#">
@@ -101,7 +102,7 @@
             </a>
             <div class="navbar-nav ms-auto">
                 <span class="navbar-text me-3">
-                     ¡Bienvenido, {{ session.full_name or current_user.username }}!
+                    </i> ¡Bienvenido, {{ session.full_name or current_user.username }}!
                 </span>
                 <a class="nav-link" href="{{ url_for('mi_cuenta') }}">
                     <i class="fas fa-user-cog"></i> Mi Cuenta
@@ -120,7 +121,7 @@
             </div>
         </div>
 
-        <!-- Estadísticas -->
+        <!-- Estadísticas del sistema -->
         <div class="row mt-4">
             <div class="col-md-2 mb-3">
                 <div class="card stats-card text-center">
@@ -179,7 +180,7 @@
             </div>
         </div>
 
-        <!-- Menú de opciones -->
+        <!-- Menú de gestión -->
         <div class="row mt-5">
             <div class="col-md-4 mb-4">
                 <div class="card management-card h-100">
@@ -288,20 +289,22 @@
         </div>
     </footer>
 
-    <!-- Toast Container -->
-    <div class="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+    <!-- Contenedor de notificaciones -->
+    <div class="toast-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script>
-        // Show Flask flash messages
+        // Datos para mensajes Flash
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for category, message in messages %}
-                    showToast('{{ message }}', '{{ category }}');
-                {% endfor %}
+                window.flashMessages = [
+                    {% for category, message in messages %}
+                        {message: '{{ message }}', category: '{{ category }}'}{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ];
             {% endif %}
         {% endwith %}
     </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
