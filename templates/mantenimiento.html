@@ -129,6 +129,7 @@
                             </div>
                             <p class="small text-muted">{{ stats.total_logs }} registros</p>
                             <form method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <input type="hidden" name="accion" value="limpiar_logs">
                                 <div class="mb-2">
                                     <input type="text" class="form-control form-control-sm" name="confirmacion" placeholder="CONFIRMAR LIMPIEZA" required>
@@ -147,6 +148,7 @@
                             </div>
                             <p class="small text-muted">{{ stats.total_notificaciones }} registros</p>
                             <form method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <input type="hidden" name="accion" value="limpiar_notificaciones">
                                 <div class="mb-2">
                                     <input type="text" class="form-control form-control-sm" name="confirmacion" placeholder="CONFIRMAR LIMPIEZA" required>
@@ -165,6 +167,7 @@
                             </div>
                             <p class="small text-muted">{{ stats.asignaciones_devueltas }} registros</p>
                             <form method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <input type="hidden" name="accion" value="limpiar_asignaciones_devueltas">
                                 <div class="mb-2">
                                     <input type="text" class="form-control form-control-sm" name="confirmacion" placeholder="CONFIRMAR LIMPIEZA" required>
@@ -212,6 +215,7 @@
                         </div>
                         
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <input type="hidden" name="accion" value="limpiar_usuarios">
                             <div class="mb-3">
                                 <input type="text" class="form-control" name="confirmacion" placeholder="CONFIRMAR LIMPIEZA" required>
@@ -252,6 +256,7 @@
                         </div>
                         
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <input type="hidden" name="accion" value="reset_completo">
                             <div class="mb-3">
                                 <input type="text" class="form-control" name="confirmacion" placeholder="CONFIRMAR LIMPIEZA" required>
@@ -322,7 +327,9 @@
             
             const form = document.createElement('form');
             form.method = 'POST';
+            const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
             form.innerHTML = `
+                <input type="hidden" name="csrf_token" value="${csrfToken}">
                 <input type="hidden" name="accion" value="${currentAction}">
                 <input type="hidden" name="confirmacion" value="CONFIRMAR LIMPIEZA">
             `;

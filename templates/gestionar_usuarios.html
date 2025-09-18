@@ -86,6 +86,7 @@
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="mb-3">
                                 <label class="form-label">Nombre</label>
                                 <input type="text" class="form-control" name="nombre" required>
@@ -173,6 +174,7 @@
                                             </button>
                                             {% if usuario.username != current_user.username %}
                                             <form method="POST" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar este usuario?')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                 <input type="hidden" name="user_id" value="{{ usuario._id }}">
                                                 <button type="submit" name="delete_user" class="btn btn-sm btn-danger">
                                                     <i class="fas fa-trash"></i>
@@ -200,6 +202,7 @@
                 </div>
                 <form method="POST">
                     <div class="modal-body">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="user_id" id="edit_user_id">
                         <div class="mb-3">
                             <label class="form-label">Nombre</label>

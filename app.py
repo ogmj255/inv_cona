@@ -42,7 +42,7 @@ except ImportError:
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
-app.config['WTF_CSRF_ENABLED'] = False
+app.config['WTF_CSRF_ENABLED'] = True
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Security headers
@@ -86,8 +86,8 @@ def rate_limit(max_requests=10, window=60):
         return decorated_function
     return decorator
 
-# CSRF Protection disabled for login issues
-# csrf = CSRFProtect(app)
+# CSRF Protection
+csrf = CSRFProtect(app)
 
 # File validation
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}

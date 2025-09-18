@@ -71,6 +71,7 @@
                     </div>
                     <div class="card-body">
                         <form method="POST" id="createTecnicoForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="mb-3">
                                 <label class="form-label">Nombre *</label>
                                 <input type="text" class="form-control" name="nombre" required minlength="2">
@@ -142,6 +143,7 @@
                                                 </button>
                                                 <form method="POST" style="display: inline;" 
                                                       onsubmit="return confirm('¿Está seguro de eliminar al técnico {{ tecnico.nombre }} {{ tecnico.apellido }}?')">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                     <input type="hidden" name="tecnico_id" value="{{ tecnico._id }}">
                                                     <button type="submit" name="delete_tecnico" 
                                                             class="btn btn-sm btn-danger"
@@ -183,6 +185,7 @@
                 </div>
                 <form method="POST">
                     <div class="modal-body">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="tecnico_id" id="edit_tecnico_id">
                         <div class="mb-3">
                             <label class="form-label">Nombre</label>

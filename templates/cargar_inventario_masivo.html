@@ -64,6 +64,7 @@
                     </div>
                     <div class="card-body">
                         <form method="POST" enctype="multipart/form-data">
+                            {{ csrf_token() }}
                             
                             {% if current_user.role == 'super_admin' %}
                             <div class="mb-4">

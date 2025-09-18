@@ -149,8 +149,9 @@ const AssignmentManager = {
         if (confirm('¿Está seguro de devolver este bien?')) {
             const form = document.createElement('form');
             form.method = 'POST';
+            const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
             form.innerHTML = `
-                <input type="hidden" name="csrf_token" value="${document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''}">
+                <input type="hidden" name="csrf_token" value="${csrfToken}">
                 <input type="hidden" name="bien_id" value="${bienId}">
                 ${asignacionId ? `<input type="hidden" name="asignacion_id" value="${asignacionId}">` : ''}
                 <input type="hidden" name="devolver_bien" value="1">
@@ -175,8 +176,9 @@ function cambiarEstado(bienId, nuevoEstado) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/cambiar_estado_bien';
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
         form.innerHTML = `
-            <input type="hidden" name="csrf_token" value="${document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''}">
+            <input type="hidden" name="csrf_token" value="${csrfToken}">
             <input type="hidden" name="bien_id" value="${bienId}">
             <input type="hidden" name="nuevo_estado" value="${nuevoEstado}">
         `;

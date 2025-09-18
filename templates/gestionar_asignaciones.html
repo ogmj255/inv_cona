@@ -71,6 +71,7 @@
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="mb-3">
                                 <label class="form-label">Bien a Asignar</label>
                                 <select class="form-control" name="bien_id" required>
@@ -148,6 +149,7 @@
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <form method="POST" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                 <input type="hidden" name="asignacion_id" value="{{ asignacion._id }}">
                                                 <input type="hidden" name="bien_id" value="{{ asignacion.bien_id }}">
                                                 <button type="submit" name="devolver_bien" class="btn btn-sm btn-warning">
@@ -155,6 +157,7 @@
                                                 </button>
                                             </form>
                                             <form method="POST" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar esta asignación?')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                 <input type="hidden" name="asignacion_id" value="{{ asignacion._id }}">
                                                 <input type="hidden" name="bien_id" value="{{ asignacion.bien_id }}">
                                                 <button type="submit" name="delete_asignacion" class="btn btn-sm btn-danger">

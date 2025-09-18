@@ -35,6 +35,7 @@
                     </div>
                     <div class="card-body">
                         <form method="POST" action="{{ url_for('gestionar_inventario') }}" enctype="multipart/form-data" id="addBienForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="mb-3">
                                 <label class="form-label">Código *</label>
                                 <input type="text" class="form-control" name="codigo" required>
@@ -247,6 +248,7 @@
                                                 
                                                 <!-- Delete Button -->
                                                 <form method="POST" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar este bien?\n\nEsta acción no se puede deshacer.')">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                     <input type="hidden" name="bien_id" value="{{ bien._id }}">
                                                     <button type="submit" name="delete_bien" class="btn btn-sm btn-outline-danger" title="Eliminar Bien">
                                                         <i class="fas fa-trash-alt"></i>
@@ -277,6 +279,7 @@
                 </div>
                 <form method="POST">
                     <div class="modal-body">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="bien_id" id="edit_bien_id">
                         <div class="mb-3">
                             <label class="form-label">Código</label>
@@ -431,6 +434,7 @@
                 form.method = 'POST';
                 form.action = '{{ url_for("cambiar_estado_bien") }}';
                 form.innerHTML = `
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="bien_id" value="${bienId}">
                     <input type="hidden" name="nuevo_estado" value="${nuevoEstado}">
                 `;

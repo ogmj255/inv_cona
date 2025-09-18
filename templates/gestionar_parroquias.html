@@ -86,6 +86,7 @@
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="mb-3">
                                 <label class="form-label">Nombre</label>
                                 <input type="text" class="form-control" name="nombre" required>
@@ -161,6 +162,7 @@
                 </div>
                 <form method="POST">
                     <div class="modal-body">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="parroquia_id" id="edit_parroquia_id">
                         <div class="mb-3">
                             <label class="form-label">Nombre</label>
